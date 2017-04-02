@@ -50,3 +50,6 @@ Server-ID: 00:00:00:00:00:00:00:00:00:00
 
 ## Links
 * Library to parse SML protocol: https://github.com/n-st/collectd-sml
+
+### Other Projects
+* Worked but regex did not match for my EHZ E3L: https://github.com/z0mt3c/ehz-sml-reader
