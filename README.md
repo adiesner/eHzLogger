@@ -1,4 +1,4 @@
-##Description
+# Description
 
 Read/parsing the output of my "Drehstromzähler" eHZ E3L - AW11112 using the IR optical head from [volkszaehler.org](http://wiki.volkszaehler.org/hardware/controllers/ir-schreib-lesekopf).
 
@@ -48,5 +48,5 @@ Server-ID: 00:00:00:00:00:00:00:00:00:00
 
 ```
 
-##Links
+## Links
 * Library to parse SML protocol: https://github.com/n-st/collectd-sml
