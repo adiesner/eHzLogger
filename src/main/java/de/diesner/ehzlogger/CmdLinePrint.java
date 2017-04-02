@@ -33,7 +33,7 @@ public class CmdLinePrint implements SmlForwarder {
 
                 for (SML_ListEntry entry : list) {
                     int unit = entry.getUnit().getVal();
-                    String unitName = null;
+                    String unitName;
                     // Only handle entries with meaningful units
                     switch (unit) {
                         case SML_Unit.WATT:
@@ -42,6 +42,8 @@ public class CmdLinePrint implements SmlForwarder {
                         case SML_Unit.WATT_HOUR:
                             unitName = "Wh";
                             break;
+                        default:
+                            unitName = null;
                     }
                     if (unitName != null) {
                         long numericalValue;
@@ -62,7 +64,7 @@ public class CmdLinePrint implements SmlForwarder {
 
                         byte objNameBytes[] = entry.getObjName().getOctetString();
                         // We need to force Java to treat the bytes as unsigned integers by AND-ing them with 0xFF
-                        System.out.printf("%d-%d:%d.%d.%d*%d = %.1f %s\n",
+                        System.out.printf("%d-%d:%d.%d.%d*%d = %.1f %s%n",
                                 0xFF & objNameBytes[0], 0xFF & objNameBytes[1], 0xFF & objNameBytes[2],
                                 0xFF & objNameBytes[3], 0xFF & objNameBytes[4], 0xFF & objNameBytes[5],
                                 numericalValue / 10.0,
