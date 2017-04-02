@@ -46,18 +46,9 @@ public class CmdLinePrint implements SmlForwarder {
                             unitName = null;
                     }
                     if (unitName != null) {
-                        long numericalValue;
-
                         SML_Value value = entry.getValue();
-                        ASNObject obj = value.getChoice();
-
-                        if (obj.getClass().equals(Integer32.class)) {
-                            Integer32 val = (Integer32) obj;
-                            numericalValue = val.getVal();
-                        } else if (obj.getClass().equals(Integer64.class)) {
-                            Integer64 val = (Integer64) obj;
-                            numericalValue = val.getVal();
-                        } else {
+                        Long numericalValue = SmlDecoder.decodeASN(value.getChoice());
+                        if (numericalValue == null) {
                             System.out.println("Got non-numerical value for an energy measurement. Skipping.");
                             continue;
                         }
