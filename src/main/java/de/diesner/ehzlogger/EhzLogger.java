@@ -28,14 +28,14 @@ public class EhzLogger {
             }
         });
 
-        CmdLinePrint cmdLinePrint = new CmdLinePrint();
+        SmlForwarder forwarder = new CmdLinePrint();
 
         while (true) {
 
             SML_File smlFile = receiver.getSMLFile();
             System.out.println("Got SML_File");
 
-            cmdLinePrint.messageReceived(smlFile.getMessages());
+            forwarder.messageReceived(smlFile.getMessages());
         }
     }
 
