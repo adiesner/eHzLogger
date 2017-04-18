@@ -1,12 +1,13 @@
 package de.diesner.ehzlogger;
 
-import java.io.IOException;
-import java.util.List;
-
 import gnu.io.PortInUseException;
 import gnu.io.UnsupportedCommOperationException;
-import org.openmuc.jsml.structures.*;
+import org.openmuc.jsml.structures.SML_File;
 import org.openmuc.jsml.tl.SML_SerialReceiver;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 public class EhzLogger {
 
@@ -28,14 +29,15 @@ public class EhzLogger {
             }
         });
 
-        SmlForwarder forwarder = new CmdLinePrint();
+        List<SmlForwarder> forwarderList = new ArrayList<>();
+        forwarderList.add(new CmdLinePrint());
+        forwarderList.add(new InfluxDbForward("http://localhost:8086/write?db=home&precision=ms", "strom"));
 
         while (true) {
-
             SML_File smlFile = receiver.getSMLFile();
-            System.out.println("Got SML_File");
-
-            forwarder.messageReceived(smlFile.getMessages());
+            for (SmlForwarder forwarder : forwarderList) {
+                forwarder.messageReceived(smlFile.getMessages());
+            }
         }
     }
 
