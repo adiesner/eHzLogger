@@ -42,8 +42,12 @@ public class InfluxDbForward implements SmlForwarder {
 
     @Override
     public void messageReceived(List<SML_Message> messageList) {
-        Map<String, String> values = new HashMap<>();
+        Map<String, String> values = extractValues(messageList);
+        postData(values);
+    }
 
+    private Map<String, String> extractValues(List<SML_Message> messageList) {
+        Map<String, String> values = new HashMap<>();
         for (int i = 0; i < messageList.size(); i++) {
             SML_Message sml_message = messageList.get(i);
             int tag = sml_message.getMessageBody().getTag().getVal();
@@ -75,7 +79,7 @@ public class InfluxDbForward implements SmlForwarder {
                 }
             }
         }
-        postData(values);
+        return values;
     }
 
     private String toLineProtocol(String measurement, Map<String, String> values) {
