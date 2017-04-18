@@ -26,6 +26,7 @@ public class InfluxDbForward implements SmlForwarder {
         add(new SmartMeterRegister(new byte[]{(byte) 0x01, 0x00, 0x02, 0x08, 0x00, (byte) 0xFF}, "Wirkenergie_Total_Lieferung")); // 2.8.0
         add(new SmartMeterRegister(new byte[]{(byte) 0x01, 0x00, 0x02, 0x08, 0x01, (byte) 0xFF}, "Wirkenergie_Tarif_1_Lieferung")); // 2.8.1
         add(new SmartMeterRegister(new byte[]{(byte) 0x01, 0x00, 0x02, 0x08, 0x02, (byte) 0xFF}, "Wirkenergie_Tarif_2_Lieferung")); // 2.8.2
+        add(new SmartMeterRegister(new byte[]{(byte) 0x01, 0x00, 0x10, 0x07, 0x00, (byte) 0xFF}, "Aktuelle_Gesamtwirkleistung")); // 16.7.0
     }};
 
     public InfluxDbForward(String remoteUri, String measurement) {
@@ -79,9 +80,18 @@ public class InfluxDbForward implements SmlForwarder {
 
     private String toLineProtocol(String measurement, Map<String, String> values) {
         StringBuffer data = new StringBuffer(measurement);
+        boolean isFirst = true;
         for (Map.Entry<String, String> entry : values.entrySet()) {
-            data.append(" ").append(entry.getKey()).append("=").append(entry.getValue());
+            if (!isFirst) {
+                data.append(",");
+            } else {
+                data.append(" ");
+                isFirst = false;
+            }
+            data.append(entry.getKey()).append("=").append(entry.getValue());
         }
+
+        data.append(" ").append(System.currentTimeMillis());
         return data.toString();
     }
 
@@ -97,6 +107,9 @@ public class InfluxDbForward implements SmlForwarder {
 
         if (response.getStatus() != 204) {
             System.out.println("Failed : HTTP error code : " + response.getStatus());
+            if (response.hasEntity()) {
+                System.out.println(response.getEntity(String.class));
+            }
         }
     }
 
