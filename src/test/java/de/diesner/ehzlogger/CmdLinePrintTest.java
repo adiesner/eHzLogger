@@ -25,8 +25,8 @@ public class CmdLinePrintTest {
 
     @After
     public void cleanUpStreams() {
-        System.setOut(null);
-        System.setErr(null);
+        System.setOut(System.out);
+        System.setErr(System.err);
     }
 
     @Test

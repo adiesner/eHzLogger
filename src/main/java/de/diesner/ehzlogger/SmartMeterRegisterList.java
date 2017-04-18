@@ -1,14 +1,13 @@
 package de.diesner.ehzlogger;
 
+import lombok.Getter;
+
 import java.util.ArrayList;
 import java.util.List;
 
 public class SmartMeterRegisterList {
 
-    public List<SmartMeterRegister> getRegisterList() {
-        return registerList;
-    }
-
+    @Getter
     private List<SmartMeterRegister> registerList = new ArrayList<>();
 
     public SmartMeterRegisterList() {
