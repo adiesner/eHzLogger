@@ -25,9 +25,7 @@ public class InfluxDbForwardTest {
 
     @Test
     public void expectCorrectPost() throws InterruptedException {
-        stubFor(post(urlEqualTo(serverPath))
-                .willReturn(aResponse()
-                        .withStatus(204)));
+        stubFor(post(urlEqualTo(serverPath)).willReturn(aResponse().withStatus(204)));
 
         influxDbForward.messageReceived(TestData.sampleMessage());
         influxDbForward.run(); // force flushing of data
@@ -38,14 +36,16 @@ public class InfluxDbForwardTest {
     }
 
     @Test
-    public void expectRetry() throws InterruptedException {
-        stubFor(post(urlEqualTo(serverPath))
-                .willReturn(aResponse()
-                        .withStatus(404)));
+    public void expectOneRetry() throws InterruptedException {
+        stubFor(post(urlEqualTo(serverPath)).willReturn(aResponse().withStatus(404)));
 
         influxDbForward.messageReceived(TestData.sampleMessage());
         influxDbForward.run(); // force flushing of data
+
+        stubFor(post(urlEqualTo(serverPath)).willReturn(aResponse().withStatus(204)));
         influxDbForward.run(); // force flushing of data
+
+        influxDbForward.run(); // force flushing of data (should not post again)
 
         verify(2, postRequestedFor(urlEqualTo(serverPath))
                 .withRequestBody(containing("datatable Wirkenergie_Tarif_2_Bezug=0.0,Wirkenergie_Tarif_1_Lieferung=1909170.0,Aktuelle_Gesamtwirkleistung=-138.3,Wirkenergie_Total_Lieferung=1909170.0,Wirkenergie_Total_Bezug=1618520.9,Wirkenergie_Tarif_2_Lieferung=0.0,Wirkenergie_Tarif_1_Bezug=1618520.9"))
@@ -54,9 +54,8 @@ public class InfluxDbForwardTest {
 
     @Test
     public void expectMaximumRetries() throws InterruptedException {
-        stubFor(post(urlEqualTo(serverPath))
-                .willReturn(aResponse()
-                        .withStatus(404)));
+        stubFor(post(urlEqualTo(serverPath)).willReturn(aResponse().withStatus(404)));
+
 
         influxDbForward.messageReceived(TestData.sampleMessage());
         for (int i=0;i<10;i++) {
