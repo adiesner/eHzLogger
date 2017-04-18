@@ -26,7 +26,7 @@ public class InfluxDbForwardTest {
 
     @Before
     public void before() {
-        influxDbForward = new InfluxDbForward("http://localhost:" + wireMockRule.port() + serverPath, tableName);
+        influxDbForward = new InfluxDbForward("http://localhost:" + wireMockRule.port() + serverPath, tableName, new SmartMeterRegisterList());
         influxDbForward.enableHttpDebug();
     }
 

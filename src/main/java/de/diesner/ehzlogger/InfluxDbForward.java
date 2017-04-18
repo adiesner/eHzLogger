@@ -8,7 +8,6 @@ import com.sun.jersey.api.client.config.DefaultClientConfig;
 import com.sun.jersey.api.client.filter.LoggingFilter;
 import org.openmuc.jsml.structures.*;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -18,20 +17,12 @@ public class InfluxDbForward implements SmlForwarder {
     private final String remoteUri;
     private final String measurement;
     private final Client client;
+    private final SmartMeterRegisterList smartMeterRegisterList;
 
-    private List<SmartMeterRegister> registerList = new ArrayList<SmartMeterRegister>() {{
-        add(new SmartMeterRegister(new byte[]{(byte) 0x01, 0x00, 0x01, 0x08, 0x00, (byte) 0xFF}, "Wirkenergie_Total_Bezug")); // 1.8.0
-        add(new SmartMeterRegister(new byte[]{(byte) 0x01, 0x00, 0x01, 0x08, 0x01, (byte) 0xFF}, "Wirkenergie_Tarif_1_Bezug")); // 1.8.1
-        add(new SmartMeterRegister(new byte[]{(byte) 0x01, 0x00, 0x01, 0x08, 0x02, (byte) 0xFF}, "Wirkenergie_Tarif_2_Bezug")); // 1.8.2
-        add(new SmartMeterRegister(new byte[]{(byte) 0x01, 0x00, 0x02, 0x08, 0x00, (byte) 0xFF}, "Wirkenergie_Total_Lieferung")); // 2.8.0
-        add(new SmartMeterRegister(new byte[]{(byte) 0x01, 0x00, 0x02, 0x08, 0x01, (byte) 0xFF}, "Wirkenergie_Tarif_1_Lieferung")); // 2.8.1
-        add(new SmartMeterRegister(new byte[]{(byte) 0x01, 0x00, 0x02, 0x08, 0x02, (byte) 0xFF}, "Wirkenergie_Tarif_2_Lieferung")); // 2.8.2
-        add(new SmartMeterRegister(new byte[]{(byte) 0x01, 0x00, 0x10, 0x07, 0x00, (byte) 0xFF}, "Aktuelle_Gesamtwirkleistung")); // 16.7.0
-    }};
-
-    public InfluxDbForward(String remoteUri, String measurement) {
+    public InfluxDbForward(String remoteUri, String measurement, SmartMeterRegisterList smartMeterRegisterList) {
         this.remoteUri = remoteUri;
         this.measurement = measurement;
+        this.smartMeterRegisterList = smartMeterRegisterList;
         ClientConfig clientConfig = new DefaultClientConfig();
         client = Client.create(clientConfig);
     }
@@ -69,7 +60,7 @@ public class InfluxDbForward implements SmlForwarder {
                         }
 
                         byte objNameBytes[] = entry.getObjName().getOctetString();
-                        for (SmartMeterRegister register : registerList) {
+                        for (SmartMeterRegister register : smartMeterRegisterList.getRegisterList()) {
                             if (register.matches(objNameBytes)) {
                                 values.put(register.getLabel(), String.valueOf(numericalValue / 10.0));
                                 break;

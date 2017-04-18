@@ -29,9 +29,11 @@ public class EhzLogger {
             }
         });
 
+        SmartMeterRegisterList smartMeterRegisterList = new SmartMeterRegisterList();
+
         List<SmlForwarder> forwarderList = new ArrayList<>();
         forwarderList.add(new CmdLinePrint());
-        forwarderList.add(new InfluxDbForward("http://localhost:8086/write?db=home&precision=ms", "strom"));
+        forwarderList.add(new InfluxDbForward("http://localhost:8086/write?db=home&precision=ms", "strom", smartMeterRegisterList));
 
         while (true) {
             SML_File smlFile = receiver.getSMLFile();
