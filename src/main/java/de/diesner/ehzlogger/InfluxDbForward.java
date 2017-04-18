@@ -24,7 +24,7 @@ public class InfluxDbForward extends TimerTask implements SmlForwarder {
 
     @Getter
     @AllArgsConstructor
-    private class DataToPost {
+    private static class DataToPost {
         private String postData;
         private int retriesLeft;
 
@@ -160,7 +160,8 @@ public class InfluxDbForward extends TimerTask implements SmlForwarder {
                 try {
                     success = postData(dataToPost);
                 } catch (Exception e) {
-                    System.out.println("Exception while posting: " + e.getStackTrace());
+                    System.out.println("Exception while posting: " + e.getMessage());
+                    e.printStackTrace();
                 }
                 if ((!success) && (dataToPost.getRetriesLeft() > 0)) {
                     failedRequests.add(dataToPost);
