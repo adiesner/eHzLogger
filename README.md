@@ -49,10 +49,22 @@ Server-ID: 00:00:00:00:00:00:00:00:00:00
 
 Adjust the settings by copying the file resources/application.properties next to the jar.
 
-Start eHzLogger with custom application.properties
+Start eHzLogger with a custom application.properties file.
 ```bash
 java -jar eHzLogger*-jar-with-dependencies.jar application.properties
 ```
+
+## The end result using InfluxDb and Grafana
+
+Using Grafana it is quite easy to display the smart meter values in a nice graphical way.
+
+![Grafana Sample](../assets/images/grafana.jpg?raw=true)
+
+The image is created using this query:
+```
+SELECT mean("Aktuelle_Gesamtwirkleistung") FROM "strom" WHERE $timeFilter GROUP BY time($__interval) fill(null)
+```
+
 
 ## Links
 * Library to parse SML protocol: https://github.com/n-st/collectd-sml
