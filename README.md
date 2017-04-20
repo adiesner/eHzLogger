@@ -41,11 +41,17 @@ Should output every second
 ```bash
 Got SML_File
 Server-ID: 00:00:00:00:00:00:00:00:00:00
-1-0:1.8.0*255 = 5453232.6 Wh
-1-0:1.8.1*255 = 5453232.6 Wh
-1-0:1.8.2*255 = 0.0 Wh
-1-0:16.7.0*255 = 39.9 W
+1-0:1.8.0*255 = 5608758,5 Wh (Wirkenergie_Total_Bezug)
+1-0:1.8.1*255 = 5608758,5 Wh (Wirkenergie_Tarif_1_Bezug)
+1-0:1.8.2*255 = 0,0 Wh (Wirkenergie_Tarif_2_Bezug)
+1-0:16.7.0*255 = 48,1 W (Aktuelle_Gesamtwirkleistung)
+```
 
+Adjust the settings by copying the file resources/application.properties next to the jar.
+
+Start eHzLogger with custom application.properties
+```bash
+java -jar eHzLogger*-jar-with-dependencies.jar application.properties
 ```
 
 ## Links
