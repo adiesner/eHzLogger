@@ -5,41 +5,101 @@ import gnu.io.UnsupportedCommOperationException;
 import org.openmuc.jsml.structures.SML_File;
 import org.openmuc.jsml.tl.SML_SerialReceiver;
 
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Properties;
 
 public class EhzLogger {
 
-    public static void main(String[] args) throws IOException, PortInUseException, UnsupportedCommOperationException {
-        System.setProperty("gnu.io.rxtx.SerialPorts", "/dev/ttyUSB0");
-        final SML_SerialReceiver receiver = new SML_SerialReceiver();
-        receiver.setupComPort("/dev/ttyUSB0");
+    private SML_SerialReceiver receiver;
+    private String port;
+    private SmartMeterRegisterList smartMeterRegisterList;
+    private List<SmlForwarder> forwarderList;
+    private Properties properties;
 
-        Runtime.getRuntime().addShutdownHook(new Thread()
-        {
-            public void run()
-            {
-                try {
-                    receiver.close();
+    public static void main(String[] args) {
+        EhzLogger ehzLogger;
+        boolean keepRunning = true;
 
-                } catch (IOException e) {
-                    System.err.println("Error while trying to close serial port: " + e.getMessage());
-                }
+        while (keepRunning) {
+            ehzLogger = new EhzLogger();
+            try {
+                keepRunning = ehzLogger.initialize(args);
+                ehzLogger.receiveMessageLoop();
+            } catch (PortInUseException e) {
+                e.printStackTrace();
+            } catch (IOException e) {
+                e.printStackTrace();
+            } catch (UnsupportedCommOperationException e) {
+                e.printStackTrace();
             }
-        });
+            ehzLogger.shutdown();
+        }
+    }
 
-        SmartMeterRegisterList smartMeterRegisterList = new SmartMeterRegisterList();
+    /**
+     * returns true on success
+     * @param args command line arguments
+     * @return
+     * @throws PortInUseException
+     * @throws IOException
+     * @throws UnsupportedCommOperationException
+     */
+    private boolean initialize(String[] args) throws PortInUseException, IOException, UnsupportedCommOperationException {
+        properties = new Properties();
 
-        List<SmlForwarder> forwarderList = new ArrayList<>();
-        forwarderList.add(new CmdLinePrint(smartMeterRegisterList));
-        forwarderList.add(new InfluxDbForward("http://localhost:8086/write?db=home&precision=ms", "strom", smartMeterRegisterList));
+        InputStream is;
+        if (args.length == 1) {
+            System.out.println("Loading properties file: "+args[0]);
+            is = new FileInputStream(args[0]);
+        } else {
+            is = getClass().getResourceAsStream("application.properties");
+        }
+        try {
+            properties.load(is);
+        } finally {
+            is.close();
+        }
+
+        receiver = new SML_SerialReceiver();
+        port = properties.getProperty("serial.port", "/dev/ttyUSB0");
+        System.setProperty("gnu.io.rxtx.SerialPorts", port);
+
+        smartMeterRegisterList = new SmartMeterRegisterList();
+        receiver.setupComPort(port);
+
+        forwarderList = new ArrayList<>();
+        if (Boolean.parseBoolean(properties.getProperty("output.cmdline.enabled"))) {
+            forwarderList.add(new CmdLinePrint(smartMeterRegisterList));
+        }
+        if (Boolean.parseBoolean(properties.getProperty("output.influxdb.enabled"))) {
+            forwarderList.add(new InfluxDbForward(properties.getProperty("output.influxdb.remoteUri"), properties.getProperty("output.influxdb.measurement"), smartMeterRegisterList));
+        }
+
+        if (forwarderList.isEmpty()) {
+            return false;
+        }
+        return true;
+    }
+
+    private void receiveMessageLoop() throws IOException {
 
         while (true) {
             SML_File smlFile = receiver.getSMLFile();
             for (SmlForwarder forwarder : forwarderList) {
                 forwarder.messageReceived(smlFile.getMessages());
             }
+        }
+    }
+
+    private void shutdown() {
+        try {
+            receiver.close();
+        } catch (IOException e) {
+            System.err.println("Error while trying to close serial port: " + e.getMessage());
         }
     }
 
