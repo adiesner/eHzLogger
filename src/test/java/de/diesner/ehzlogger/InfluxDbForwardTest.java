@@ -1,9 +1,12 @@
 package de.diesner.ehzlogger;
 
 import com.github.tomakehurst.wiremock.junit.WireMockRule;
+import lombok.SneakyThrows;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.util.Properties;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
@@ -18,8 +21,11 @@ public class InfluxDbForwardTest {
     private final String tableName = "datatable";
 
     @Before
+    @SneakyThrows
     public void before() {
-        influxDbForward = new InfluxDbForward("http://localhost:" + wireMockRule.port() + serverPath, tableName, new SmartMeterRegisterList());
+        Properties properties = new Properties();
+        properties.load(getClass().getResourceAsStream("/application.properties"));
+        influxDbForward = new InfluxDbForward("http://localhost:" + wireMockRule.port() + serverPath, tableName, new SmartMeterRegisterList(properties));
         influxDbForward.enableHttpDebug();
     }
 

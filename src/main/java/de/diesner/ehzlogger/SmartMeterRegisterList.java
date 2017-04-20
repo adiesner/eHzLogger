@@ -1,28 +1,39 @@
 package de.diesner.ehzlogger;
 
 import lombok.Getter;
+import lombok.NonNull;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Properties;
 
 public class SmartMeterRegisterList {
 
     @Getter
     private List<SmartMeterRegister> registerList = new ArrayList<>();
 
-    public SmartMeterRegisterList() {
-        initialize();
+    public SmartMeterRegisterList(@NonNull Properties properties) {
+        initialize(properties);
     }
 
-    private void initialize() {
-        //TODO: load from configuration file
-        registerList.add(new SmartMeterRegister(new byte[]{(byte) 0x01, 0x00, 0x01, 0x08, 0x00, (byte) 0xFF}, "Wirkenergie_Total_Bezug")); // 1.8.0
-        registerList.add(new SmartMeterRegister(new byte[]{(byte) 0x01, 0x00, 0x01, 0x08, 0x01, (byte) 0xFF}, "Wirkenergie_Tarif_1_Bezug")); // 1.8.1
-        registerList.add(new SmartMeterRegister(new byte[]{(byte) 0x01, 0x00, 0x01, 0x08, 0x02, (byte) 0xFF}, "Wirkenergie_Tarif_2_Bezug")); // 1.8.2
-        registerList.add(new SmartMeterRegister(new byte[]{(byte) 0x01, 0x00, 0x02, 0x08, 0x00, (byte) 0xFF}, "Wirkenergie_Total_Lieferung")); // 2.8.0
-        registerList.add(new SmartMeterRegister(new byte[]{(byte) 0x01, 0x00, 0x02, 0x08, 0x01, (byte) 0xFF}, "Wirkenergie_Tarif_1_Lieferung")); // 2.8.1
-        registerList.add(new SmartMeterRegister(new byte[]{(byte) 0x01, 0x00, 0x02, 0x08, 0x02, (byte) 0xFF}, "Wirkenergie_Tarif_2_Lieferung")); // 2.8.2
-        registerList.add(new SmartMeterRegister(new byte[]{(byte) 0x01, 0x00, 0x10, 0x07, 0x00, (byte) 0xFF}, "Aktuelle_Gesamtwirkleistung")); // 16.7.0
+    private void initialize(Properties properties) {
+        for (Map.Entry<Object, Object> property : properties.entrySet()) {
+            String key = (String)property.getKey();
+            if (key.startsWith("register.")) {
+                byte[] obisHexCode = hexStringToByteArray(key.substring(9));
+                registerList.add(new SmartMeterRegister(obisHexCode, (String)property.getValue()));
+            }
+        }
+    }
+
+    private static byte[] hexStringToByteArray(String s) {
+        int len = s.length();
+        byte[] data = new byte[len / 2];
+        for (int i = 0; i < len; i += 2) {
+            data[i / 2] = (byte) ((Character.digit(s.charAt(i), 16) << 4) + Character.digit(s.charAt(i + 1), 16));
+        }
+        return data;
     }
 
 }

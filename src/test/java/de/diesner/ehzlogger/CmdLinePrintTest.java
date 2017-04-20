@@ -1,11 +1,13 @@
 package de.diesner.ehzlogger;
 
+import lombok.SneakyThrows;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
+import java.util.Properties;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -17,10 +19,14 @@ public class CmdLinePrintTest {
     private SmartMeterRegisterList smartMeterRegisterList;
 
     @Before
+    @SneakyThrows
     public void setUpStreams() {
         System.setOut(new PrintStream(outContent));
         System.setErr(new PrintStream(errContent));
-        smartMeterRegisterList = new SmartMeterRegisterList();
+
+        Properties properties = new Properties();
+        properties.load(getClass().getResourceAsStream("/application.properties"));
+        smartMeterRegisterList = new SmartMeterRegisterList(properties);
     }
 
     @After

@@ -56,7 +56,7 @@ public class EhzLogger {
             System.out.println("Loading properties file: "+args[0]);
             is = new FileInputStream(args[0]);
         } else {
-            is = getClass().getResourceAsStream("application.properties");
+            is = getClass().getResourceAsStream("/application.properties");
         }
         try {
             properties.load(is);
@@ -68,7 +68,7 @@ public class EhzLogger {
         port = properties.getProperty("serial.port", "/dev/ttyUSB0");
         System.setProperty("gnu.io.rxtx.SerialPorts", port);
 
-        smartMeterRegisterList = new SmartMeterRegisterList();
+        smartMeterRegisterList = new SmartMeterRegisterList(properties);
         receiver.setupComPort(port);
 
         forwarderList = new ArrayList<>();
