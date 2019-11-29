@@ -7,6 +7,7 @@ import org.junit.Test;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
+import java.util.Locale;
 import java.util.Properties;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -17,6 +18,7 @@ public class CmdLinePrintTest {
     private final ByteArrayOutputStream outContent = new ByteArrayOutputStream();
     private final ByteArrayOutputStream errContent = new ByteArrayOutputStream();
     private SmartMeterRegisterList smartMeterRegisterList;
+    private Locale oldLocale;
 
     @Before
     @SneakyThrows
@@ -27,12 +29,16 @@ public class CmdLinePrintTest {
         Properties properties = new Properties();
         properties.load(getClass().getResourceAsStream("/application.properties"));
         smartMeterRegisterList = new SmartMeterRegisterList(properties);
+
+        oldLocale = Locale.getDefault();
+        Locale.setDefault(new Locale("de", "DE"));
     }
 
     @After
     public void cleanUpStreams() {
         System.setOut(System.out);
         System.setErr(System.err);
+        Locale.setDefault(oldLocale);
     }
 
     @Test

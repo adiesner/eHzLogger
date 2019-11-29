@@ -49,7 +49,7 @@ public class InfluxDbForward extends TimerTask implements SmlForwarder {
 
     @Override
     public void messageReceived(List<SML_Message> messageList) {
-        Map<String, String> values = extractValues(messageList);
+        Map<String, String> values = SmlDecoder.extractValues(messageList, smartMeterRegisterList);
         addPostItem(getDataToPost(values));
     }
 
@@ -60,42 +60,6 @@ public class InfluxDbForward extends TimerTask implements SmlForwarder {
         String postData = toLineProtocol(measurement, values);
         int MAXRETRYCOUNT = 3;
         return new DataToPost(postData, MAXRETRYCOUNT);
-    }
-
-    private Map<String, String> extractValues(List<SML_Message> messageList) {
-        Map<String, String> values = new HashMap<>();
-        for (int i = 0; i < messageList.size(); i++) {
-            SML_Message sml_message = messageList.get(i);
-            int tag = sml_message.getMessageBody().getTag().getVal();
-            if (tag == SML_MessageBody.GetListResponse) {
-                SML_GetListRes resp = (SML_GetListRes) sml_message.getMessageBody().getChoice();
-                SML_List smlList = resp.getValList();
-
-                SML_ListEntry[] list = smlList.getValListEntry();
-
-                for (SML_ListEntry entry : list) {
-                    int unit = entry.getUnit().getVal();
-
-                    if (unit == SML_Unit.WATT || unit == SML_Unit.WATT_HOUR) {
-                        SML_Value value = entry.getValue();
-                        Long numericalValue = SmlDecoder.decodeASN(value.getChoice());
-                        if (numericalValue == null) {
-                            System.out.println("Got non-numerical value for an energy measurement. Skipping.");
-                            continue;
-                        }
-
-                        byte objNameBytes[] = entry.getObjName().getOctetString();
-                        for (SmartMeterRegister register : smartMeterRegisterList.getRegisterList()) {
-                            if (register.matches(objNameBytes)) {
-                                values.put(register.getLabel(), String.valueOf(numericalValue / 10.0));
-                                break;
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        return values;
     }
 
     private String toLineProtocol(String measurement, Map<String, String> values) {
