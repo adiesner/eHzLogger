@@ -23,7 +23,7 @@ public class HttpPostForward extends TimerTask implements SmlForwarder {
     private final SmartMeterRegisterList smartMeterRegisterList;
     private final Client client;
     private final Timer timer;
-    private final int maximumMessagesBeforeCleanup = 32000;
+    private final static int maximumMessagesBeforeCleanup = 32000;
     private final List<Map<String, String>> postDataList = new ArrayList<>();
 
     public HttpPostForward(String remoteUri, SmartMeterRegisterList smartMeterRegisterList) {
