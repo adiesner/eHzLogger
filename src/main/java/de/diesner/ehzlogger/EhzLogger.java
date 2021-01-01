@@ -83,7 +83,7 @@ public class EhzLogger {
             );
         }
         if (Boolean.parseBoolean(properties.getProperty("output.posturl.enabled"))) {
-            forwarderList.add(new HttpPostForward(properties.getProperty("output.posturl.remoteUri"), smartMeterRegisterList));
+            forwarderList.add(new HttpPostForward(properties.getProperty("output.posturl.remoteUri"), smartMeterRegisterList, properties.getProperty("output.posturl.bufferdir")));
         }
 
         if (forwarderList.isEmpty()) {

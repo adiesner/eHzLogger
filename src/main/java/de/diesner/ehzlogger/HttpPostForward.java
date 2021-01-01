@@ -1,6 +1,7 @@
 package de.diesner.ehzlogger;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
@@ -9,6 +10,13 @@ import com.sun.jersey.api.client.config.ClientConfig;
 import com.sun.jersey.api.client.config.DefaultClientConfig;
 import org.openmuc.jsml.structures.SML_Message;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.IOException;
+import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -23,12 +31,25 @@ public class HttpPostForward extends TimerTask implements SmlForwarder {
     private final SmartMeterRegisterList smartMeterRegisterList;
     private final Client client;
     private final Timer timer;
-    private final static int maximumMessagesBeforeCleanup = 32000;
+    private final static int maximumMessagesBeforeBuffer = 10;
     private final List<Map<String, String>> postDataList = new ArrayList<>();
+    private Path bufferDirectory = null;
+    private ObjectMapper mapper = new ObjectMapper();
+    private boolean isOnline;
 
-    public HttpPostForward(String remoteUri, SmartMeterRegisterList smartMeterRegisterList) {
+    public HttpPostForward(String remoteUri, SmartMeterRegisterList smartMeterRegisterList, String bufferDirectoryPath) {
         this.remoteUri = remoteUri;
         this.smartMeterRegisterList = smartMeterRegisterList;
+        if (bufferDirectoryPath != null && bufferDirectoryPath.trim().length() > 0) {
+            bufferDirectory = Paths.get(bufferDirectoryPath);
+            try {
+                Files.createDirectories(bufferDirectory);
+            } catch (IOException e) {
+                e.printStackTrace();
+                System.out.println("Failed to create buffer directory: " + bufferDirectoryPath);
+                bufferDirectory = null;
+            }
+        }
 
         ClientConfig clientConfig = new DefaultClientConfig();
         client = Client.create(clientConfig);
@@ -49,6 +70,7 @@ public class HttpPostForward extends TimerTask implements SmlForwarder {
 
     @Override
     public void run() {
+        boolean lastIsOnline = isOnline;
         List<Map<String, String>> dataForNextPost = new ArrayList<>();
         synchronized (postDataList) {
             while (dataForNextPost.size() < 100 && !postDataList.isEmpty()) {
@@ -56,38 +78,34 @@ public class HttpPostForward extends TimerTask implements SmlForwarder {
             }
         }
 
+        if (dataForNextPost.isEmpty()) {
+            return;
+        }
+
         try {
             if (!postData(dataForNextPost)) {
+                isOnline = false;
                 synchronized (postDataList) {
                     postDataList.addAll(dataForNextPost);
                 }
+            } else {
+                isOnline = true;
             }
         } catch (JsonProcessingException e) {
             e.printStackTrace();
         }
 
-        //TODO: clean up memory if postDataList fills too much due to not reachable backend
-        if (postDataList.size() > maximumMessagesBeforeCleanup) {
-            cleanupMessages();
+        if ((lastIsOnline == false) && (isOnline)) {
+            loadFromBuffer();
         }
-    }
 
-    /**
-     * removes every second entry from postDataList
-     */
-    private void cleanupMessages() {
-        List<Map<String, String>> newCleanedList = new ArrayList<>();
-        synchronized (postDataList) {
-            while (!postDataList.isEmpty()) {
-                // add first item
-                final Map<String, String> item = postDataList.remove(0);
-                newCleanedList.add(item);
-                // drop second item
-                if (!postDataList.isEmpty()) {
-                    postDataList.remove(0);
-                }
+        if (isOnline == false && (postDataList.size() > maximumMessagesBeforeBuffer)) {
+            List<Map<String, String>> dataToBuffer = new ArrayList<>();
+            synchronized (postDataList) {
+                dataToBuffer.addAll(postDataList);
+                postDataList.clear();
             }
-            postDataList.addAll(newCleanedList);
+            saveToBuffer(dataToBuffer);
         }
     }
 
@@ -96,7 +114,6 @@ public class HttpPostForward extends TimerTask implements SmlForwarder {
             return true;
         }
 
-        ObjectMapper mapper = new ObjectMapper();
         final String json = mapper.writeValueAsString(dataToPost);
         WebResource webResource = client.resource(remoteUri);
         ClientResponse response = webResource.post(ClientResponse.class, json);
@@ -109,6 +126,36 @@ public class HttpPostForward extends TimerTask implements SmlForwarder {
             return false;
         }
         return true;
+    }
+
+    private void saveToBuffer(List<Map<String, String>> toSave) {
+        if (toSave == null || toSave.size() == 0) {
+            return;
+        }
+        final Path bufferFile = bufferDirectory.resolve(System.currentTimeMillis() + ".txt");
+        try (BufferedWriter writer = Files.newBufferedWriter(bufferFile, Charset.forName("UTF-8"))) {
+            final String json = mapper.writeValueAsString(toSave);
+            writer.write(json);
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    private void loadFromBuffer() {
+        if (bufferDirectory == null) {
+            return;
+        }
+        final File[] files = bufferDirectory.toFile().listFiles();
+        for (File file : files) {
+            try {
+                final List<Map<String, String>> values = mapper.readValue(file, new TypeReference<List<Map<String, String>>>() {
+                });
+                postDataList.addAll(values);
+                file.delete();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
 }
