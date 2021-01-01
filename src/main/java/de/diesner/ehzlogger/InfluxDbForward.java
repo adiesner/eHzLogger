@@ -8,9 +8,20 @@ import com.sun.jersey.api.client.config.DefaultClientConfig;
 import com.sun.jersey.api.client.filter.LoggingFilter;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-import org.openmuc.jsml.structures.*;
+import org.openmuc.jsml.structures.SML_Message;
 
-import java.util.*;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.IOException;
+import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Timer;
+import java.util.TimerTask;
 
 public class InfluxDbForward extends TimerTask implements SmlForwarder {
 
@@ -21,6 +32,8 @@ public class InfluxDbForward extends TimerTask implements SmlForwarder {
     private final List<DataToPost> postDataList = new ArrayList<>();
 
     private final Timer timer;
+    private boolean isOnline;
+    private Path bufferDirectory = null;
 
     @Getter
     @AllArgsConstructor
@@ -33,10 +46,20 @@ public class InfluxDbForward extends TimerTask implements SmlForwarder {
         }
     }
 
-    public InfluxDbForward(String remoteUri, String measurement, SmartMeterRegisterList smartMeterRegisterList) {
+    public InfluxDbForward(String remoteUri, String measurement, SmartMeterRegisterList smartMeterRegisterList, String bufferDirectoryPath) {
         this.remoteUri = remoteUri;
         this.measurement = measurement;
         this.smartMeterRegisterList = smartMeterRegisterList;
+        if (bufferDirectoryPath != null && bufferDirectoryPath.trim().length() > 0) {
+            bufferDirectory = Paths.get(bufferDirectoryPath);
+            try {
+                Files.createDirectories(bufferDirectory);
+            } catch (IOException e) {
+                e.printStackTrace();
+                System.out.println("Failed to create buffer directory: " + bufferDirectoryPath);
+                bufferDirectory = null;
+            }
+        }
         ClientConfig clientConfig = new DefaultClientConfig();
         client = Client.create(clientConfig);
         timer = new Timer();
@@ -81,7 +104,7 @@ public class InfluxDbForward extends TimerTask implements SmlForwarder {
 
     private boolean postData(DataToPost dataToPost) {
         if (dataToPost == null || dataToPost.getRetriesLeft() == 0) {
-            return true;
+            return false;
         }
         WebResource webResource = client.resource(remoteUri);
         ClientResponse response = webResource.post(ClientResponse.class, dataToPost.getPostData());
@@ -106,7 +129,7 @@ public class InfluxDbForward extends TimerTask implements SmlForwarder {
     }
 
     private void addPostItem(DataToPost dataToPost) {
-        if ((dataToPost != null) && (dataToPost.getRetriesLeft() > 0)) {
+        if (dataToPost != null) {
             synchronized (postDataList) {
                 postDataList.add(dataToPost);
             }
@@ -115,6 +138,7 @@ public class InfluxDbForward extends TimerTask implements SmlForwarder {
 
     @Override
     public void run() {
+        boolean lastIsOnline = isOnline;
         List<DataToPost> failedRequests = new ArrayList<>();
         DataToPost dataToPost;
         do {
@@ -123,19 +147,66 @@ public class InfluxDbForward extends TimerTask implements SmlForwarder {
                 boolean success = false;
                 try {
                     success = postData(dataToPost);
+                    if (success) {
+                        isOnline = true;
+                    }
                 } catch (Exception e) {
                     System.out.println("Exception while posting: " + e.getMessage());
                     e.printStackTrace();
                 }
                 if ((!success) && (dataToPost.getRetriesLeft() > 0)) {
                     failedRequests.add(dataToPost);
+                    isOnline = false;
                 }
             }
         } while (dataToPost != null);
 
-        for (DataToPost retry: failedRequests) {
+        // switched from offline to online
+        if ((lastIsOnline == false) && (isOnline == true)) {
+            loadFromBuffer();
+        }
+
+        List<DataToPost> retriesGone = new ArrayList<>();
+        for (DataToPost retry : failedRequests) {
             retry.decRetriesLeft();
-            addPostItem(retry);
+            if (retry.getRetriesLeft() > 0) {
+                addPostItem(retry);
+            } else {
+                retriesGone.add(retry);
+            }
+        }
+        saveToBuffer(retriesGone);
+    }
+
+    private void saveToBuffer(List<DataToPost> toSave) {
+        if (toSave == null || toSave.size() == 0) {
+            return;
+        }
+        final Path bufferFile = bufferDirectory.resolve(System.currentTimeMillis() + ".txt");
+        try (BufferedWriter writer = Files.newBufferedWriter(bufferFile, Charset.forName("UTF-8"))) {
+            for (DataToPost data : toSave) {
+                writer.write(data.getPostData() + System.lineSeparator());
+            }
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    private void loadFromBuffer() {
+        if (bufferDirectory == null) {
+            return;
+        }
+        final File[] files = bufferDirectory.toFile().listFiles();
+        for (File file : files) {
+            try {
+                List<String> allLines = Files.readAllLines(file.toPath());
+                for (String line : allLines) {
+                    addPostItem(new DataToPost(line, 3));
+                }
+                file.delete();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
     }
 }

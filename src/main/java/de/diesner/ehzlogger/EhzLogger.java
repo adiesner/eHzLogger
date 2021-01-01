@@ -76,7 +76,11 @@ public class EhzLogger {
             forwarderList.add(new CmdLinePrint(smartMeterRegisterList));
         }
         if (Boolean.parseBoolean(properties.getProperty("output.influxdb.enabled"))) {
-            forwarderList.add(new InfluxDbForward(properties.getProperty("output.influxdb.remoteUri"), properties.getProperty("output.influxdb.measurement"), smartMeterRegisterList));
+            forwarderList.add(new InfluxDbForward(properties.getProperty("output.influxdb.remoteUri"),
+                properties.getProperty("output.influxdb.measurement"),
+                smartMeterRegisterList,
+                properties.getProperty("output.influxdb.bufferdir"))
+            );
         }
         if (Boolean.parseBoolean(properties.getProperty("output.posturl.enabled"))) {
             forwarderList.add(new HttpPostForward(properties.getProperty("output.posturl.remoteUri"), smartMeterRegisterList));
