@@ -197,13 +197,18 @@ public class InfluxDbForward extends TimerTask implements SmlForwarder {
             return;
         }
         final File[] files = bufferDirectory.toFile().listFiles();
+        if (files == null) {
+            return;
+        }
         for (File file : files) {
             try {
                 List<String> allLines = Files.readAllLines(file.toPath());
                 for (String line : allLines) {
                     addPostItem(new DataToPost(line, 3));
                 }
-                file.delete();
+                if (!file.delete()) {
+                    System.out.println("Unable to delete buffer file: "+file.getPath());
+                }
             } catch (IOException e) {
                 e.printStackTrace();
             }

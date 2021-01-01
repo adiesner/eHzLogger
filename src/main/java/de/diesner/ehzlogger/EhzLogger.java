@@ -28,7 +28,8 @@ public class EhzLogger {
             ehzLogger = new EhzLogger();
             try {
                 keepRunning = ehzLogger.initialize(args);
-                ehzLogger.receiveMessageLoop();
+                if (keepRunning)
+                    ehzLogger.receiveMessageLoop();
             } catch (PortInUseException e) {
                 e.printStackTrace();
             } catch (IOException e) {
@@ -69,7 +70,13 @@ public class EhzLogger {
         System.setProperty("gnu.io.rxtx.SerialPorts", port);
 
         smartMeterRegisterList = new SmartMeterRegisterList(properties);
-        receiver.setupComPort(port);
+        try {
+            receiver.setupComPort(port);
+        } catch (Exception e) {
+            e.printStackTrace();
+            receiver = null;
+            return false;
+        }
 
         forwarderList = new ArrayList<>();
         if (Boolean.parseBoolean(properties.getProperty("output.cmdline.enabled"))) {
@@ -104,7 +111,9 @@ public class EhzLogger {
 
     private void shutdown() {
         try {
-            receiver.close();
+            if (receiver != null) {
+                receiver.close();
+            }
         } catch (IOException e) {
             System.err.println("Error while trying to close serial port: " + e.getMessage());
         }
