@@ -1,15 +1,15 @@
 package de.diesner.ehzlogger;
 
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientResponse;
-import com.sun.jersey.api.client.WebResource;
-import com.sun.jersey.api.client.config.ClientConfig;
-import com.sun.jersey.api.client.config.DefaultClientConfig;
-import com.sun.jersey.api.client.filter.LoggingFilter;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import org.openmuc.jsml.structures.SML_Message;
 
+import javax.ws.rs.client.Client;
+import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.client.Entity;
+import javax.ws.rs.client.WebTarget;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.TimeUnit;
 
 public class InfluxDbForward extends TimerTask implements SmlForwarder {
 
@@ -60,14 +61,12 @@ public class InfluxDbForward extends TimerTask implements SmlForwarder {
                 bufferDirectory = null;
             }
         }
-        ClientConfig clientConfig = new DefaultClientConfig();
-        client = Client.create(clientConfig);
+        client = ClientBuilder.newBuilder()
+            .connectTimeout(1000, TimeUnit.MILLISECONDS)
+            .readTimeout(5000, TimeUnit.MILLISECONDS)
+            .build();
         timer = new Timer();
         timer.schedule(this, 1000, 1000);
-    }
-
-    public void enableHttpDebug() {
-        client.addFilter(new LoggingFilter(System.out));
     }
 
     @Override
@@ -106,13 +105,19 @@ public class InfluxDbForward extends TimerTask implements SmlForwarder {
         if (dataToPost == null || dataToPost.getRetriesLeft() == 0) {
             return false;
         }
-        WebResource webResource = client.resource(remoteUri);
-        ClientResponse response = webResource.post(ClientResponse.class, dataToPost.getPostData());
+        final WebTarget target = client.target(remoteUri);
+        final Response response;
+        try {
+            response = target.request(MediaType.APPLICATION_JSON_TYPE).post(Entity.entity(dataToPost.getPostData(), MediaType.TEXT_PLAIN));
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
 
         if (response.getStatus() != 204) {
             System.out.println("Failed : HTTP error code : " + response.getStatus());
             if (response.hasEntity()) {
-                System.out.println(response.getEntity(String.class));
+                System.out.println(response.getEntity());
             }
             return false;
         }
@@ -207,7 +212,7 @@ public class InfluxDbForward extends TimerTask implements SmlForwarder {
                     addPostItem(new DataToPost(line, 3));
                 }
                 if (!file.delete()) {
-                    System.out.println("Unable to delete buffer file: "+file.getPath());
+                    System.out.println("Unable to delete buffer file: " + file.getPath());
                 }
             } catch (IOException e) {
                 e.printStackTrace();

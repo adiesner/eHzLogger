@@ -43,7 +43,6 @@ public class InfluxDbForwardTest {
         properties.load(getClass().getResourceAsStream("/application.properties"));
         bufferFolder= temporaryFolder.newFolder("buffer-"+ UUID.randomUUID());
         influxDbForward = new InfluxDbForward("http://localhost:" + wireMockRule.port() + serverPath, tableName, new SmartMeterRegisterList(properties), bufferFolder.getPath());
-        influxDbForward.enableHttpDebug();
     }
 
     @Test
