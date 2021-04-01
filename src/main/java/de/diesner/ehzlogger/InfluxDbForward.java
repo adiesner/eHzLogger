@@ -28,6 +28,8 @@ public class InfluxDbForward extends TimerTask implements SmlForwarder {
 
     private final String remoteUri;
     private final String measurement;
+    private final String username;
+    private final String password;
     private final Client client;
     private final SmartMeterRegisterList smartMeterRegisterList;
     private final List<DataToPost> postDataList = new ArrayList<>();
@@ -47,8 +49,11 @@ public class InfluxDbForward extends TimerTask implements SmlForwarder {
         }
     }
 
-    public InfluxDbForward(String remoteUri, String measurement, SmartMeterRegisterList smartMeterRegisterList, String bufferDirectoryPath) {
+    public InfluxDbForward(String remoteUri, String username, String password, String measurement, SmartMeterRegisterList smartMeterRegisterList,
+        String bufferDirectoryPath) {
         this.remoteUri = remoteUri;
+        this.username = username;
+        this.password = password;
         this.measurement = measurement;
         this.smartMeterRegisterList = smartMeterRegisterList;
         if (bufferDirectoryPath != null && bufferDirectoryPath.trim().length() > 0) {
@@ -61,10 +66,15 @@ public class InfluxDbForward extends TimerTask implements SmlForwarder {
                 bufferDirectory = null;
             }
         }
-        client = ClientBuilder.newBuilder()
+        ClientBuilder clientBuilder = ClientBuilder.newBuilder()
             .connectTimeout(1000, TimeUnit.MILLISECONDS)
-            .readTimeout(5000, TimeUnit.MILLISECONDS)
-            .build();
+            .readTimeout(5000, TimeUnit.MILLISECONDS);
+
+        if ((password != null) && (username != null) && (username.trim().length() > 0)) {
+            clientBuilder.register(new Authenticator(username, password));
+        }
+
+        client = clientBuilder.build();
         timer = new Timer();
         timer.schedule(this, 1000, 1000);
     }

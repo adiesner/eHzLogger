@@ -1,5 +1,6 @@
 package de.diesner.ehzlogger;
 
+import com.github.tomakehurst.wiremock.client.BasicCredentials;
 import com.github.tomakehurst.wiremock.client.WireMock;
 import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import lombok.SneakyThrows;
@@ -35,14 +36,15 @@ public class InfluxDbForwardTest {
     private String serverPath = "/write?db=databaseName";
     private final String tableName = "datatable";
     private File bufferFolder;
+    private Properties properties;
 
     @Before
     @SneakyThrows
     public void before() {
-        Properties properties = new Properties();
+        properties = new Properties();
         properties.load(getClass().getResourceAsStream("/application.properties"));
         bufferFolder= temporaryFolder.newFolder("buffer-"+ UUID.randomUUID());
-        influxDbForward = new InfluxDbForward("http://localhost:" + wireMockRule.port() + serverPath, tableName, new SmartMeterRegisterList(properties), bufferFolder.getPath());
+        influxDbForward = new InfluxDbForward("http://localhost:" + wireMockRule.port() + serverPath, "", "", tableName, new SmartMeterRegisterList(properties), bufferFolder.getPath());
     }
 
     @Test
@@ -54,6 +56,23 @@ public class InfluxDbForwardTest {
 
         verify(1, postRequestedFor(urlEqualTo(serverPath))
                 .withRequestBody(containing("datatable Wirkenergie_Tarif_2_Bezug=0.0,Wirkenergie_Tarif_1_Lieferung=1909170.0,Aktuelle_Gesamtwirkleistung=-138.3,Wirkenergie_Total_Lieferung=1909170.0,Wirkenergie_Total_Bezug=1618520.9,Wirkenergie_Tarif_2_Lieferung=0.0,Wirkenergie_Tarif_1_Bezug=1618520.9"))
+        );
+    }
+
+    @Test
+    public void expectBasicAuth() {
+        String username = "sampleUser";
+        String password = "samplePassword";
+        influxDbForward = new InfluxDbForward("http://localhost:" + wireMockRule.port() + serverPath, username, password, tableName, new SmartMeterRegisterList(properties), bufferFolder.getPath());
+
+        stubFor(post(urlEqualTo(serverPath)).willReturn(aResponse().withStatus(204)));
+
+        influxDbForward.messageReceived(TestData.sampleMessage());
+        influxDbForward.run(); // force flushing of data
+
+        verify(1, postRequestedFor(urlEqualTo(serverPath))
+            .withBasicAuth(new BasicCredentials(username, password))
+            .withRequestBody(containing("datatable Wirkenergie_Tarif_2_Bezug=0.0,Wirkenergie_Tarif_1_Lieferung=1909170.0,Aktuelle_Gesamtwirkleistung=-138.3,Wirkenergie_Total_Lieferung=1909170.0,Wirkenergie_Total_Bezug=1618520.9,Wirkenergie_Tarif_2_Lieferung=0.0,Wirkenergie_Tarif_1_Bezug=1618520.9"))
         );
     }
 

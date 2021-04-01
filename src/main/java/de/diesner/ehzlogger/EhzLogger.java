@@ -84,6 +84,8 @@ public class EhzLogger {
         }
         if (Boolean.parseBoolean(properties.getProperty("output.influxdb.enabled"))) {
             forwarderList.add(new InfluxDbForward(properties.getProperty("output.influxdb.remoteUri"),
+                properties.getProperty("output.influxdb.username"),
+                properties.getProperty("output.influxdb.password"),
                 properties.getProperty("output.influxdb.measurement"),
                 smartMeterRegisterList,
                 properties.getProperty("output.influxdb.bufferdir"))
