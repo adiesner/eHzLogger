@@ -194,7 +194,7 @@ public class InfluxDbForward extends TimerTask implements SmlForwarder {
     }
 
     private void saveToBuffer(List<DataToPost> toSave) {
-        if (toSave == null || toSave.size() == 0) {
+        if (bufferDirectory == null || toSave == null || toSave.size() == 0) {
             return;
         }
         final Path bufferFile = bufferDirectory.resolve(System.currentTimeMillis() + ".txt");
