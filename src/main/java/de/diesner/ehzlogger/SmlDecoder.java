@@ -1,12 +1,32 @@
 package de.diesner.ehzlogger;
 
-import org.openmuc.jsml.structures.*;
+import org.openmuc.jsml.structures.ASNObject;
+import org.openmuc.jsml.structures.Integer16;
+import org.openmuc.jsml.structures.Integer32;
+import org.openmuc.jsml.structures.Integer64;
+import org.openmuc.jsml.structures.Integer8;
+import org.openmuc.jsml.structures.SML_GetListRes;
+import org.openmuc.jsml.structures.SML_List;
+import org.openmuc.jsml.structures.SML_ListEntry;
+import org.openmuc.jsml.structures.SML_Message;
+import org.openmuc.jsml.structures.SML_MessageBody;
+import org.openmuc.jsml.structures.SML_Unit;
+import org.openmuc.jsml.structures.SML_Value;
+import org.openmuc.jsml.structures.Unsigned16;
+import org.openmuc.jsml.structures.Unsigned32;
+import org.openmuc.jsml.structures.Unsigned64;
+import org.openmuc.jsml.structures.Unsigned8;
 
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 public class SmlDecoder {
+
+    private static DecimalFormat df = new DecimalFormat("0.0", DecimalFormatSymbols.getInstance(Locale.ENGLISH));
 
     public static Long decodeASN(ASNObject obj) {
         if (obj.getClass().equals(Integer8.class)) {
@@ -30,6 +50,8 @@ public class SmlDecoder {
     }
 
     public static Map<String, String> extractValues(List<SML_Message> messageList, SmartMeterRegisterList smartMeterRegisterList) {
+        df.setMaximumFractionDigits(340); // 340 = DecimalFormat.DOUBLE_FRACTION_DIGITS
+
         Map<String, String> values = new HashMap<>();
         for (int i = 0; i < messageList.size(); i++) {
             SML_Message sml_message = messageList.get(i);
@@ -54,7 +76,7 @@ public class SmlDecoder {
                         byte objNameBytes[] = entry.getObjName().getOctetString();
                         for (SmartMeterRegister register : smartMeterRegisterList.getRegisterList()) {
                             if (register.matches(objNameBytes)) {
-                                values.put(register.getLabel(), String.valueOf(numericalValue / 10.0));
+                                values.put(register.getLabel(), df.format(numericalValue / 10.0));
                                 break;
                             }
                         }

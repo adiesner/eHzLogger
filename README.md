@@ -65,6 +65,35 @@ The image is created using this query:
 SELECT mean("Aktuelle_Gesamtwirkleistung") FROM "strom" WHERE $timeFilter GROUP BY time($__interval) fill(null)
 ```
 
+## Collecting data with telegraf
+
+application.properties
+```
+# Enable output as json via http server on /ehzlogger
+output.httpserver.enabled=true
+# bind to ip
+output.httpserver.ip=127.0.0.1
+# http server listening on port
+output.httpserver.port=8975
+```
+
+telegraf.conf
+```
+[[inputs.http]]   
+    urls = [                                                                    
+        "http://127.0.0.1:8975/ehzlogger"
+    ]                               
+    data_format = "json"
+```
+
+Test your telegram configuration
+```
+telegraf -config ./telegraf.conf -test
+...
+> http,host=NanoPi-M1,url=http://127.0.0.1:8975/ehzlogger Aktuelle_Gesamtwirkleistung=1677701.2,Wirkenergie_Tarif_1_Bezug=20297973.2,Wirkenergie_Tarif_2_Bezug=0,Wirkenergie_Total_Bezug=20297973.2 1618328919000000000
+```
+
+
 
 ## Links
 * Library to parse SML protocol: https://github.com/n-st/collectd-sml

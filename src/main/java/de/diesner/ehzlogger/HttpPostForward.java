@@ -160,15 +160,20 @@ public class HttpPostForward extends TimerTask implements SmlForwarder {
             return;
         }
         for (File file : files) {
+            if (!file.isFile()) {
+                continue;
+            }
             try {
                 final List<Map<String, String>> values = mapper.readValue(file, new TypeReference<List<Map<String, String>>>() {
                 });
                 postDataList.addAll(values);
+            } catch (IOException e) {
+                System.out.println("Error loading file: "+file.getPath());
+                e.printStackTrace();
+            } finally {
                 if (!file.delete()) {
                     System.out.println("Unable to delete buffer file: "+file.getPath());
                 }
-            } catch (IOException e) {
-                e.printStackTrace();
             }
         }
     }

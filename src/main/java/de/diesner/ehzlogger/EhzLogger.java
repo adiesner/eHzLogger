@@ -1,5 +1,6 @@
 package de.diesner.ehzlogger;
 
+import com.sun.net.httpserver.HttpServer;
 import gnu.io.PortInUseException;
 import gnu.io.UnsupportedCommOperationException;
 import org.openmuc.jsml.structures.SML_File;
@@ -8,9 +9,12 @@ import org.openmuc.jsml.tl.SML_SerialReceiver;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadPoolExecutor;
 
 public class EhzLogger {
 
@@ -19,6 +23,8 @@ public class EhzLogger {
     private SmartMeterRegisterList smartMeterRegisterList;
     private List<SmlForwarder> forwarderList;
     private Properties properties;
+    private HttpServer server = null;
+    private ThreadPoolExecutor threadPoolExecutor = null;
 
     public static void main(String[] args) {
         EhzLogger ehzLogger;
@@ -36,13 +42,15 @@ public class EhzLogger {
                 e.printStackTrace();
             } catch (UnsupportedCommOperationException e) {
                 e.printStackTrace();
+            } finally {
+                ehzLogger.shutdown();
             }
-            ehzLogger.shutdown();
         }
     }
 
     /**
      * returns true on success
+     *
      * @param args command line arguments
      * @return
      * @throws PortInUseException
@@ -54,7 +62,7 @@ public class EhzLogger {
 
         InputStream is;
         if (args.length == 1) {
-            System.out.println("Loading properties file: "+args[0]);
+            System.out.println("Loading properties file: " + args[0]);
             is = new FileInputStream(args[0]);
         } else {
             is = getClass().getResourceAsStream("/application.properties");
@@ -92,7 +100,22 @@ public class EhzLogger {
             );
         }
         if (Boolean.parseBoolean(properties.getProperty("output.posturl.enabled"))) {
-            forwarderList.add(new HttpPostForward(properties.getProperty("output.posturl.remoteUri"), smartMeterRegisterList, properties.getProperty("output.posturl.bufferdir")));
+            forwarderList.add(new HttpPostForward(properties.getProperty("output.posturl.remoteUri"), smartMeterRegisterList,
+                properties.getProperty("output.posturl.bufferdir")));
+        }
+
+        if (Boolean.parseBoolean(properties.getProperty("output.httpserver.enabled"))) {
+            String path = "/ehzlogger";
+            String ip = properties.getProperty("output.httpserver.ip");
+            int port = Integer.parseInt(properties.getProperty("output.httpserver.port"));
+            threadPoolExecutor = (ThreadPoolExecutor) Executors.newFixedThreadPool(10);
+            server = HttpServer.create(new InetSocketAddress(ip, port), 0);
+            final HttpServerHandler httpServerHandler = new HttpServerHandler(smartMeterRegisterList);
+            forwarderList.add(httpServerHandler);
+            server.createContext(path, httpServerHandler);
+            server.setExecutor(threadPoolExecutor);
+            server.start();
+            System.out.println("Running server on http://" + ip + ":" + port + path);
         }
 
         if (forwarderList.isEmpty()) {
@@ -118,6 +141,12 @@ public class EhzLogger {
             }
         } catch (IOException e) {
             System.err.println("Error while trying to close serial port: " + e.getMessage());
+        }
+        if (server != null) {
+            server.stop(100);
+        }
+        if (threadPoolExecutor != null) {
+            threadPoolExecutor.shutdown();
         }
     }
 
