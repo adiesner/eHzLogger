@@ -55,7 +55,7 @@ public class InfluxDbForwardTest {
         influxDbForward.run(); // force flushing of data
 
         verify(1, postRequestedFor(urlEqualTo(serverPath))
-                .withRequestBody(containing("datatable Wirkenergie_Tarif_2_Bezug=0.0,Wirkenergie_Tarif_1_Lieferung=1909170.0,Aktuelle_Gesamtwirkleistung=-138.3,Wirkenergie_Total_Lieferung=1909170.0,Wirkenergie_Total_Bezug=1618520.9,Wirkenergie_Tarif_2_Lieferung=0.0,Wirkenergie_Tarif_1_Bezug=1618520.9"))
+                .withRequestBody(containing("datatable Wirkenergie_Tarif_2_Bezug=0.0,Wirkenergie_Tarif_1_Lieferung=19091700.0,Aktuelle_Gesamtwirkleistung=-1383.0,Wirkenergie_Total_Lieferung=19091700.0,Wirkenergie_Total_Bezug=16185209.0,Wirkenergie_Tarif_2_Lieferung=0.0,Wirkenergie_Tarif_1_Bezug=16185209.0"))
         );
     }
 
@@ -72,7 +72,7 @@ public class InfluxDbForwardTest {
 
         verify(1, postRequestedFor(urlEqualTo(serverPath))
             .withBasicAuth(new BasicCredentials(username, password))
-            .withRequestBody(containing("datatable Wirkenergie_Tarif_2_Bezug=0.0,Wirkenergie_Tarif_1_Lieferung=1909170.0,Aktuelle_Gesamtwirkleistung=-138.3,Wirkenergie_Total_Lieferung=1909170.0,Wirkenergie_Total_Bezug=1618520.9,Wirkenergie_Tarif_2_Lieferung=0.0,Wirkenergie_Tarif_1_Bezug=1618520.9"))
+            .withRequestBody(containing("datatable Wirkenergie_Tarif_2_Bezug=0.0,Wirkenergie_Tarif_1_Lieferung=19091700.0,Aktuelle_Gesamtwirkleistung=-1383.0,Wirkenergie_Total_Lieferung=19091700.0,Wirkenergie_Total_Bezug=16185209.0,Wirkenergie_Tarif_2_Lieferung=0.0,Wirkenergie_Tarif_1_Bezug=16185209.0"))
         );
     }
 
@@ -89,7 +89,7 @@ public class InfluxDbForwardTest {
         influxDbForward.run(); // force flushing of data (should not post again)
 
         verify(2, postRequestedFor(urlEqualTo(serverPath))
-                .withRequestBody(containing("datatable Wirkenergie_Tarif_2_Bezug=0.0,Wirkenergie_Tarif_1_Lieferung=1909170.0,Aktuelle_Gesamtwirkleistung=-138.3,Wirkenergie_Total_Lieferung=1909170.0,Wirkenergie_Total_Bezug=1618520.9,Wirkenergie_Tarif_2_Lieferung=0.0,Wirkenergie_Tarif_1_Bezug=1618520.9"))
+                .withRequestBody(containing("datatable Wirkenergie_Tarif_2_Bezug=0.0,Wirkenergie_Tarif_1_Lieferung=19091700.0,Aktuelle_Gesamtwirkleistung=-1383.0,Wirkenergie_Total_Lieferung=19091700.0,Wirkenergie_Total_Bezug=16185209.0,Wirkenergie_Tarif_2_Lieferung=0.0,Wirkenergie_Tarif_1_Bezug=16185209.0"))
         );
     }
 
@@ -103,7 +103,7 @@ public class InfluxDbForwardTest {
         }
 
         verify(3, postRequestedFor(urlEqualTo(serverPath))
-                .withRequestBody(containing("datatable Wirkenergie_Tarif_2_Bezug=0.0,Wirkenergie_Tarif_1_Lieferung=1909170.0,Aktuelle_Gesamtwirkleistung=-138.3,Wirkenergie_Total_Lieferung=1909170.0,Wirkenergie_Total_Bezug=1618520.9,Wirkenergie_Tarif_2_Lieferung=0.0,Wirkenergie_Tarif_1_Bezug=1618520.9"))
+                .withRequestBody(containing("datatable Wirkenergie_Tarif_2_Bezug=0.0,Wirkenergie_Tarif_1_Lieferung=19091700.0,Aktuelle_Gesamtwirkleistung=-1383.0,Wirkenergie_Total_Lieferung=19091700.0,Wirkenergie_Total_Bezug=16185209.0,Wirkenergie_Tarif_2_Lieferung=0.0,Wirkenergie_Tarif_1_Bezug=16185209.0"))
         );
     }
 
@@ -141,7 +141,7 @@ public class InfluxDbForwardTest {
 
         assertThat("Buffer Files have been removed", bufferFolder.listFiles().length, CoreMatchers.equalTo(0));
         verify(101, postRequestedFor(urlEqualTo(serverPath))
-            .withRequestBody(containing("datatable Wirkenergie_Tarif_2_Bezug=0.0,Wirkenergie_Tarif_1_Lieferung=1909170.0,Aktuelle_Gesamtwirkleistung=-138.3,Wirkenergie_Total_Lieferung=1909170.0,Wirkenergie_Total_Bezug=1618520.9,Wirkenergie_Tarif_2_Lieferung=0.0,Wirkenergie_Tarif_1_Bezug=1618520.9"))
+            .withRequestBody(containing("datatable Wirkenergie_Tarif_2_Bezug=0.0,Wirkenergie_Tarif_1_Lieferung=19091700.0,Aktuelle_Gesamtwirkleistung=-1383.0,Wirkenergie_Total_Lieferung=19091700.0,Wirkenergie_Total_Bezug=16185209.0,Wirkenergie_Tarif_2_Lieferung=0.0,Wirkenergie_Tarif_1_Bezug=16185209.0"))
         );
     }
 

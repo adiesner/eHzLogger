@@ -76,7 +76,7 @@ public class SmlDecoder {
                         byte objNameBytes[] = entry.getObjName().getOctetString();
                         for (SmartMeterRegister register : smartMeterRegisterList.getRegisterList()) {
                             if (register.matches(objNameBytes)) {
-                                values.put(register.getLabel(), df.format(numericalValue / 10.0));
+                                values.put(register.getLabel(), df.format(numericalValue));
                                 break;
                             }
                         }
